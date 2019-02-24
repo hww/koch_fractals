@@ -12,7 +12,7 @@ namespace VARP.KochFractals
 
         [Header("Blend Source & Target")] 
         public bool enableInterpolation;
-        [Range(0f,1f)]
+        [UnityEngine.Range(0f,1f)]
         public float interpolationRatio = 1f;
 
         // use or not the audio source to control this koch line
@@ -96,13 +96,7 @@ namespace VARP.KochFractals
                     }                
                 }
                 
-                if (enableBezier)
-                {
-      
-                    lineRenderer.positionCount = bezierPositions.Length;
-                    lineRenderer.SetPositions(bezierPositions);
-                }
-                else if (enableInterpolation)
+                if (enableInterpolation)
                 {
                     lineRenderer.positionCount = pointsCollectionBlended.Length;
                     lineRenderer.SetPositions(pointsCollectionBlended);

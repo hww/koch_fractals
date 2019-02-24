@@ -73,11 +73,10 @@ namespace VARP.KochFractals
         [Header("Bezier")]
         public bool enableBezier;
         // generate bezier line as the last step
-        [Range(8,24)]
-        public int bezierVertexCount = 2;
+        [UnityEngine.Range(8,24)]
+        public int bezierVertexCount = 4;
         
         protected int initiatorPointsAmount;
-        protected Vector3[] bezierPositions;
  
         
         private void Awake()
@@ -101,22 +100,10 @@ namespace VARP.KochFractals
             }
             if (drawTargetPosition)
             {
-                if (enableBezier)
-                {
-                    Gizmos.color = Color.red;
-                    for (var i = 0; i < bezierPositions.Length - 1; i++)
-                        Gizmos.DrawLine(bezierPositions[i], bezierPositions[i + 1]);
-                }
-                else
-                {
-                    Gizmos.color = Color.red;
-                    for (var i = 0; i < targetPositions.Length - 1; i++)
-                        Gizmos.DrawLine(targetPositions[i], targetPositions[i + 1]);
-                    
-                }
+                Gizmos.color = Color.red;
+                for (var i = 0; i < targetPositions.Length - 1; i++)
+                    Gizmos.DrawLine(targetPositions[i], targetPositions[i + 1]);
             }
-
-
         }
 
         /// <summary>
@@ -142,7 +129,11 @@ namespace VARP.KochFractals
             for (var i = 0; i < generators.Length; i++)
                 GenerateKoch(generatorCurve, targetPositions, generators[i], rotateAxis);
             
-            bezierPositions = BezierCurve.Generate(targetPositions, bezierVertexCount);
+            if (enableBezier)
+            {
+                sourcePositions = BezierCurve.Generate(sourcePositions, bezierVertexCount);
+                targetPositions = BezierCurve.Generate(targetPositions, bezierVertexCount);
+            }
         }
 
         public struct LineSegment

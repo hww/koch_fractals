@@ -1,7 +1,6 @@
+using System;
 using Boo.Lang;
-using UnityEditor.ShaderGraph;
 using UnityEngine;
-using UnityEngine.UI;
 
 namespace VARP.KochFractals
 {
@@ -12,7 +11,7 @@ namespace VARP.KochFractals
             public GameObject go;
             public TrailRenderer trail;
             public int currentTargetNum;
-            public Vector3 targetPosition;
+            public Vector3 targetLocalPosition;
             public Color emissionColor;
         }
 
@@ -21,67 +20,49 @@ namespace VARP.KochFractals
 
         [Header("Trail Properties")] 
         public GameObject trailPrefab;
-
         public AnimationCurve trailWidthCurve;
         [Range(0, 8)] 
-        public int trailEndCapVertices;
-
+        public int trailEndCapVertices = 4;
         public Material trailMaterial;
         public Gradient trailColor;
 
         [Header("Audio")] 
         public AudioPeer audioPeer;
-
         public int[] audioBand = new int[8];
-
-        public float lerpPosSpeed;
-        public float distanceSnap;
-        public Vector3 speedMinMax = Vector3.one;
         
+        [Header("Other Settings")]
+        public Vector2 speedMinMax = new Vector2(0, 100);
+        public Vector2 trailWidthMinMax = new Vector2(0.1f, 0.5f);
+        public Vector2 trailTimeMinMax = new Vector2(0f, 0.2f);
+        public float colorMultiplier = 2f;
+
+        private float lerpPosSpeed;
+        private float distanceSnap;
+        private Color startColor;
+        private Color endColor;
+
         private void Start()
         {
+            startColor = new Color(0,0,0, 0);
+            endColor = new Color(0,0,0, 1);
             trails = new List<TrailItem>();
-
+            var step = targetPositions.Length / initiatorPointsAmount;
+            
             for (var i = 0; i < initiatorPointsAmount; i++)
             {
                 var item = new TrailItem();
                 item.go = Instantiate(trailPrefab, transform.position, Quaternion.identity);
+                item.go.transform.parent = transform;
                 item.trail = item.go.GetComponent<TrailRenderer>();
                 item.trail.material = new Material(trailMaterial);
                 item.emissionColor = trailColor.Evaluate(i * (1f / initiatorPointsAmount));
                 item.trail.numCapVertices = trailEndCapVertices;
                 item.trail.widthCurve = trailWidthCurve;
                 
-                Vector3 instantiatePosition;
-
-                if (isDirty)
-                {
-                    int step;
-                    if (enableBezier)
-                    {
-                        step = bezierPositions.Length / initiatorPointsAmount;
-                        instantiatePosition = bezierPositions[i * step];
-                        item.currentTargetNum = i * step + 1;
-                        item.targetPosition =
-                            bezierPositions[item.currentTargetNum];
-                    }
-                    else
-                    {
-                        step = targetPositions.Length / initiatorPointsAmount;
-                        instantiatePosition = targetPositions[i * step];
-                        item.currentTargetNum = i * step + 1;
-                        item.targetPosition =
-                            targetPositions[item.currentTargetNum];  
-                    }
-                }
-                else
-                {
-                    instantiatePosition = sourcePositions[i];
-                    item.currentTargetNum = i + 1;
-                    item.targetPosition = sourcePositions[item.currentTargetNum];
-                }
-
-                item.go.transform.localPosition = instantiatePosition;
+                item.go.transform.localPosition = targetPositions[i * step];
+                item.currentTargetNum = i * step + 1;
+                item.targetLocalPosition = targetPositions[item.currentTargetNum];  
+                
                 trails.Add(item);
             }
         }
@@ -89,8 +70,29 @@ namespace VARP.KochFractals
         void Update()
         {
             Movement();
+            AudioBehaviour();
         }
 
+        void AudioBehaviour()
+        {
+            for (var i = 0; i < initiatorPointsAmount; i++)
+            {
+                var trail = trails[i];
+                var bandValue = audioPeer.audioBand[audioBand[i]];
+                
+                var emissionLerp = Color.Lerp(startColor, trails[i].emissionColor * colorMultiplier,bandValue);
+                trail.trail.material.SetColor("_EmissionColor", emissionLerp);
+                
+                var colorLerp = Color.Lerp(startColor, endColor, bandValue);
+                trail.trail.material.SetColor("_Color", colorLerp);
+
+                var widthLerp = Mathf.Lerp(trailWidthMinMax.x, trailWidthMinMax.y, bandValue);
+                trail.trail.widthMultiplier = widthLerp;
+                
+                var timeLerp = Mathf.Lerp(trailTimeMinMax.x, trailTimeMinMax.y, bandValue);
+                trail.trail.time = timeLerp;
+            }
+        }
         void Movement()
         {
             lerpPosSpeed = Mathf.Lerp(speedMinMax.x, speedMinMax.y, audioPeer.amplitude); 
@@ -98,27 +100,18 @@ namespace VARP.KochFractals
             {
                 var item = trails[i];
                 var trailTransform = item.go.transform;
-                trailTransform.localPosition = Vector3.MoveTowards(trailTransform.localPosition, item.targetPosition, Time.deltaTime * lerpPosSpeed);
-                distanceSnap = Vector3.Distance(trailTransform.localPosition, item.targetPosition);
+                
+                trailTransform.localPosition = Vector3.MoveTowards(trailTransform.localPosition, item.targetLocalPosition, Time.deltaTime * lerpPosSpeed);
+                distanceSnap = Vector3.Distance(trailTransform.localPosition, item.targetLocalPosition);
+                
                 if (distanceSnap < 0.05f)
                 {
-                    trailTransform.localPosition = item.targetPosition;
-                    if (enableBezier)
-                    {
-                        if (item.currentTargetNum < bezierPositions.Length - 1)
-                            item.currentTargetNum ++;
-                        else
-                            item.currentTargetNum = 1;
-                        item.targetPosition = bezierPositions[item.currentTargetNum];    
-                    }
+                    trailTransform.localPosition = item.targetLocalPosition;
+                    if (item.currentTargetNum < sourcePositions.Length - 1)
+                        item.currentTargetNum ++;
                     else
-                    {
-                        if (item.currentTargetNum < sourcePositions.Length - 1)
-                            item.currentTargetNum ++;
-                        else
-                            item.currentTargetNum = 1;
-                        item.targetPosition = sourcePositions[item.currentTargetNum];
-                    }
+                        item.currentTargetNum = 1;
+                    item.targetLocalPosition = sourcePositions[item.currentTargetNum];
                 }
             }
         }
