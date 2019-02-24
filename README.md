@@ -7,4 +7,4 @@ Koch Fractals Demo for Unity
 
 ## Koch Trace Line
 
-![Image 1](docs/koch_trace_animation.gif)
+![Image 2](docs/koch_trace_animation.gif)
