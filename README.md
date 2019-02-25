@@ -1,8 +1,6 @@
 # Koch Fractals
 Koch Fractals Demo for Unity 
 
-Does not have any custom shaders. 
-
 ## Koch Line
 
 Rendering koch lines with LineRenderer, linear interpolation betweeb two last generations lines and change the interpolation ratio by audio spectrum. 
