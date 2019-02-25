@@ -135,8 +135,15 @@ namespace VARP.KochFractals
                 amplitudePeak = currentAmplitude;
             else
                 amplitudePeak *= PEAK_DECREASING_RATIO;
-            amplitude = currentAmplitude / amplitudePeak;
-            amplitudeBuffer = currentAmplitudeBuffer / amplitudePeak;
+            if (amplitudePeak == 0)
+            {
+                amplitude = amplitudeBuffer = 0f;
+            }
+            else
+            {
+                amplitude = currentAmplitude / amplitudePeak;
+                amplitudeBuffer = currentAmplitudeBuffer / amplitudePeak;
+            }
         }
     }
 }
