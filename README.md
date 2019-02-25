@@ -3,7 +3,7 @@ Koch Fractals Demo for Unity
 
 ## Koch Line
 
-Rendering koch lines with LineRenderer, linear interpolation betweeb two last generations lines and change the interpolation ratio by audio spectrum. 
+Rendering koch lines with LineRenderer, linear interpolation betweeb two last line generations, optionaly changing the interpolation ratio by analyzing the audio spectrum. 
 
 ![Image 1](docs/koch_line_animation.gif)
 
